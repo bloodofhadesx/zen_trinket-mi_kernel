@@ -229,4 +229,5 @@ source "drivers/fstabdt_disable/Kconfig"
 
 source "drivers/su_variants.Kconfig"
 
+source "drivers/lindroid-drm/Kconfig"
 endmenu

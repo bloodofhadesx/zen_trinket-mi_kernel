@@ -197,3 +197,4 @@ obj-y += fstabdt_disable/
 obj-$(CONFIG_KSU_NEXT)		+= kernelsu/kernel/
 obj-$(CONFIG_KSU_SUKI)		+= sukisu/kernel/
 obj-$(CONFIG_KSU_RKSU)		+= rksu/kernel/
+obj-y += lindroid-drm/
