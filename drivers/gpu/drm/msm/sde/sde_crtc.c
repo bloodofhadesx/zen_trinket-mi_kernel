@@ -2981,6 +2981,11 @@ enum sde_intf_mode sde_crtc_get_intf_mode(struct drm_crtc *crtc)
 static void sde_crtc_vblank_cb(void *data)
 {
 	struct drm_crtc *crtc = (struct drm_crtc *)data;
+
+	if (!crtc) {
+		SDE_ERROR("vblank callback received null crtc\n");
+		return;
+	}
 	struct sde_crtc *sde_crtc = to_sde_crtc(crtc);
 
 	/* keep statistics on vblank callback - with auto reset via debugfs */
