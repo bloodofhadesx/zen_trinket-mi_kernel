@@ -199,6 +199,7 @@ static int msm_sensor_match_vendor_id(struct msm_sensor_ctrl_t *s_ctrl)
 
 	return rc;
 }
+#endif
 
 int msm_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 {
@@ -233,6 +234,7 @@ int msm_sensor_power_down(struct msm_sensor_ctrl_t *s_ctrl)
 		sensor_i2c_client);
 }
 
+#if IS_ENABLED(CONFIG_MACH_XIAOMI_C3J)
 static int msm_sensor_get_sensor_id_gc02m1(struct msm_sensor_ctrl_t *s_ctrl)
 {
 	int rc = 0;
