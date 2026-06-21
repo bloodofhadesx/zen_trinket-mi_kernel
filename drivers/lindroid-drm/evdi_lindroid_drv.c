@@ -314,6 +314,12 @@ static int evdi_platform_probe(struct platform_device *pdev)
 		goto err_modeset;
 	}
 
+#if !EVDI_HAVE_ATOMIC_HELPERS
+	ret = drm_vblank_init(ddev, LINDROID_MAX_CONNECTORS);
+	if (ret)
+		evdi_warn("vblank init failed: %d", ret);
+#endif
+
 	drm_kms_helper_poll_init(ddev);
 
 	ret = drm_dev_register(ddev, 0);
