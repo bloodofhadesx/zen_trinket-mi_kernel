@@ -23,6 +23,15 @@ atomic_t evdi_device_count = ATOMIC_INIT(0);
 static int evdi_driver_open(struct drm_device *dev, struct drm_file *file);
 static void evdi_driver_postclose(struct drm_device *dev, struct drm_file *file);
 
+static int evdi_enable_vblank(struct drm_device *dev, unsigned int pipe)
+{
+	return 0;
+}
+
+static void evdi_disable_vblank(struct drm_device *dev, unsigned int pipe)
+{
+}
+
 #if EVDI_HAVE_DRM_OPEN_CLOSE
 static const struct file_operations evdi_fops = {
 	.owner = THIS_MODULE,
@@ -87,6 +96,9 @@ static struct drm_driver evdi_driver = {
 	.gem_prime_import = evdi_gem_prime_import,
 	.prime_handle_to_fd = evdi_prime_handle_to_fd,
 	.prime_fd_to_handle = evdi_prime_fd_to_handle,
+
+	.enable_vblank = evdi_enable_vblank,
+	.disable_vblank = evdi_disable_vblank,
 
 	.open = evdi_driver_open,
 	.postclose = evdi_driver_postclose,
@@ -313,12 +325,6 @@ static int evdi_platform_probe(struct platform_device *pdev)
 		evdi_err("Failed to initialize modeset: %d", ret);
 		goto err_modeset;
 	}
-
-#if !EVDI_HAVE_ATOMIC_HELPERS
-	ret = drm_vblank_init(ddev, LINDROID_MAX_CONNECTORS);
-	if (ret)
-		evdi_warn("vblank init failed: %d", ret);
-#endif
 
 	drm_kms_helper_poll_init(ddev);
 
