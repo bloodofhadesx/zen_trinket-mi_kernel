@@ -1273,8 +1273,8 @@ int evdi_ioctl_vsync(struct drm_device *dev,
 	crtc = &evdi->pipe[slot].crtc;
 
 	/* Check if crtc and its vblank are properly initialized */
-	if (unlikely(!crtc || !dev->num_crtcs || !dev->vblank)) {
-		evdi_warn("CRTC[%d] not properly initialized (vblank system)", slot);
+	if (unlikely(!crtc || !dev->num_crtcs)) {
+		evdi_warn("CRTC[%d] not properly initialized", slot);
 		return -ENODEV;
 	}
 

@@ -194,7 +194,7 @@ int evdi_device_init(struct evdi_device *evdi, struct platform_device *pdev)
 		evdi->displays[i].height = 1080;
 		evdi->displays[i].refresh_rate = 60;
 		evdi->displays[i].generation = 1;
-		evdi->displays[i].power_mode = 0;
+		evdi->displays[i].power_mode = 1;
 		evdi->connector[i] = NULL;
 	}
 	evdi->drm_client = NULL;
