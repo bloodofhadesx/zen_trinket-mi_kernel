@@ -915,7 +915,10 @@ static int __enable_vblank(struct drm_device *dev, unsigned int pipe)
 			return crtc->funcs->enable_vblank(crtc);
 	}
 
-	return dev->driver->enable_vblank(dev, pipe);
+	if (dev->driver->enable_vblank)
+		return dev->driver->enable_vblank(dev, pipe);
+
+	return -EINVAL;
 }
 
 static int drm_vblank_enable(struct drm_device *dev, unsigned int pipe)
