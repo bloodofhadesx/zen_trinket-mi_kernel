@@ -1256,19 +1256,31 @@ int evdi_ioctl_vsync(struct drm_device *dev,
 
 	EVDI_PERF_INC64(&evdi_perf.ioctl_calls[2]);
 
+	if (unlikely(!evdi || !dev))
+		return -ENODEV;
+
 	if (unlikely(atomic_read(&evdi->events.stopping)))
 		return -ENODEV;
 
 	slot = vs->display_id;
 
-	if (unlikely(!READ_ONCE(evdi->displays[slot].power_mode)))
-		return 0;
-
 	if (slot < 0 || slot >= LINDROID_MAX_CONNECTORS)
 		return -EINVAL;
 
+	if (unlikely(!READ_ONCE(evdi->displays[slot].power_mode)))
+		return 0;
+
 	crtc = &evdi->pipe[slot].crtc;
 
+	/* Check if crtc and its vblank are properly initialized */
+	if (unlikely(!crtc || !dev->num_crtcs)) {
+		evdi_warn("CRTC[%d] not properly initialized", slot);
+		return -ENODEV;
+	}
+
+	/* Safely attempt to get vblank; on older kernels this can fail if vblank
+	 * isn't initialized for this CRTC yet, which is expected during early stages
+	 */
 	if (drm_crtc_vblank_get(crtc) == 0) {
 		drm_crtc_handle_vblank(crtc);
 		drm_crtc_vblank_put(crtc);
