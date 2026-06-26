@@ -2261,16 +2261,18 @@ int input_register_device(struct input_dev *dev)
 	if (!dev->setkeycode)
 		dev->setkeycode = input_default_setkeycode;
 
-	if (task_active_pid_ns(current) != &init_pid_ns)
+	dev->created_from_init_ns = (task_active_pid_ns(current) == &init_pid_ns);
+	if (!dev->created_from_init_ns)
 		dev_set_uevent_suppress(&dev->dev, 1);
 	error = device_add(&dev->dev);
 	if (error)
 		goto err_free_vals;
 
 	path = kobject_get_path(&dev->dev.kobj, GFP_KERNEL);
-	pr_info("%s as %s\n",
-		dev->name ? dev->name : "Unspecified device",
-		path ? path : "N/A");
+	if (dev->created_from_init_ns)
+		pr_info("%s as %s\n",
+			dev->name ? dev->name : "Unspecified device",
+			path ? path : "N/A");
 	kfree(path);
 
 	error = mutex_lock_interruptible(&input_mutex);

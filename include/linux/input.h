@@ -177,6 +177,8 @@ struct input_dev {
 	unsigned int users;
 	bool going_away;
 
+	bool created_from_init_ns;
+
 	struct device dev;
 
 	struct list_head	h_list;

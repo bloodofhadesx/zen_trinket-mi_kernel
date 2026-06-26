@@ -26,6 +26,7 @@
 #include <linux/major.h>
 #include <linux/device.h>
 #include <linux/cdev.h>
+#include <linux/pid_namespace.h>
 #include "input-compat.h"
 
 enum evdev_clock_type {
@@ -486,11 +487,16 @@ static unsigned int evdev_compute_buffer_size(struct input_dev *dev)
 static int evdev_open(struct inode *inode, struct file *file)
 {
 	struct evdev *evdev = container_of(inode->i_cdev, struct evdev, cdev);
-	unsigned int bufsize = evdev_compute_buffer_size(evdev->handle.dev);
+	struct input_dev *dev = evdev->handle.dev;
+	unsigned int bufsize = evdev_compute_buffer_size(dev);
 	unsigned int size = sizeof(struct evdev_client) +
 					bufsize * sizeof(struct input_event);
 	struct evdev_client *client;
 	int error;
+
+	if (!dev->created_from_init_ns &&
+	    task_active_pid_ns(current) == &init_pid_ns)
+		return -ENODEV;
 
 	client = kzalloc(size, GFP_KERNEL | __GFP_NOWARN);
 	if (!client)
