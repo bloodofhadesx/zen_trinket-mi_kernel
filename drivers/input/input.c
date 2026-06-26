@@ -28,6 +28,7 @@
 #include <linux/mutex.h>
 #include <linux/rcupdate.h>
 #include "input-compat.h"
+#include <linux/pid_namespace.h>
 
 MODULE_AUTHOR("Vojtech Pavlik <vojtech@suse.cz>");
 MODULE_DESCRIPTION("Input core");
@@ -2260,6 +2261,8 @@ int input_register_device(struct input_dev *dev)
 	if (!dev->setkeycode)
 		dev->setkeycode = input_default_setkeycode;
 
+	if (task_active_pid_ns(current) != &init_pid_ns)
+		dev_set_uevent_suppress(&dev->dev, 1);
 	error = device_add(&dev->dev);
 	if (error)
 		goto err_free_vals;
