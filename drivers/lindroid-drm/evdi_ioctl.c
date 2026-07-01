@@ -1108,26 +1108,39 @@ int evdi_ioctl_create_buff_callback(struct drm_device *dev, void *data, struct d
 		evdi_warn("create_buff_callback: poll_id %d not found", cb->poll_id);
 	}
 
-	if (cb->dma_buf_fd >= 0) {
-		struct dma_buf *dmabuf = dma_buf_get(cb->dma_buf_fd);
-		if (!IS_ERR(dmabuf)) {
-#ifdef EVDI_HAVE_XARRAY
-			xa_store(&evdi->dmabuf_by_id, (unsigned long)cb->id, dmabuf, GFP_KERNEL);
-#else
-			void *old;
-			spin_lock(&evdi->inflight_lock);
-			old = idr_find(&evdi->dmabuf_by_id, cb->id);
-			if (old) {
-				idr_replace(&evdi->dmabuf_by_id, dmabuf, cb->id);
-			} else {
-				idr_alloc(&evdi->dmabuf_by_id, dmabuf, cb->id, cb->id + 1, GFP_ATOMIC);
-			}
-			spin_unlock(&evdi->inflight_lock);
-#endif
-		}
-	}
+		if (cb->dma_buf_fd >= 0) {
+			struct dma_buf *dmabuf = dma_buf_get(cb->dma_buf_fd);
+			if (!IS_ERR(dmabuf)) {
+	#ifdef EVDI_HAVE_XARRAY
+				int xa_err_;
 
-	return 0;
+				xa_err_ = xa_err(xa_store(&evdi->dmabuf_by_id,
+					(unsigned long)cb->id, dmabuf, GFP_KERNEL));
+				if (xa_err_)
+					dma_buf_put(dmabuf);
+	#else
+				void *old;
+				int alloc_ret;
+
+				spin_lock(&evdi->inflight_lock);
+				old = idr_find(&evdi->dmabuf_by_id, cb->id);
+				if (old) {
+					idr_replace(&evdi->dmabuf_by_id, dmabuf, cb->id);
+				} else {
+					alloc_ret = idr_alloc(&evdi->dmabuf_by_id, dmabuf,
+						cb->id, cb->id + 1, GFP_ATOMIC);
+					if (alloc_ret < 0) {
+						spin_unlock(&evdi->inflight_lock);
+						dma_buf_put(dmabuf);
+						return 0;
+					}
+				}
+				spin_unlock(&evdi->inflight_lock);
+	#endif
+			}
+		}
+
+		return 0;
 }
 
 int evdi_ioctl_gbm_del_buff(struct drm_device *dev, void *data, struct drm_file *file)
