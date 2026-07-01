@@ -340,11 +340,13 @@ struct evdi_device {
 #ifdef EVDI_HAVE_XARRAY
 	struct xarray file_xa;
 	struct xarray inflight_xa;
+	struct xarray dmabuf_by_id;
 	u32 inflight_next_id;
 #else
 	struct idr file_idr;
 	spinlock_t file_lock;
 	struct idr inflight_idr;
+	struct idr dmabuf_by_id;
 	spinlock_t inflight_lock;
 #endif
 	struct evdi_percpu_inflight __percpu	*percpu_inflight;

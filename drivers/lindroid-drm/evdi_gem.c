@@ -466,6 +466,28 @@ int evdi_prime_handle_to_fd(struct drm_device *dev,
 			    uint32_t flags,
 			    int *prime_fd)
 {
+	struct evdi_device *evdi = dev->dev_private;
+	struct dma_buf *dmabuf;
+	void *entry;
+
+#ifdef EVDI_HAVE_XARRAY
+	entry = xa_load(&evdi->dmabuf_by_id, handle);
+#else
+	spin_lock(&evdi->inflight_lock);
+	entry = idr_find(&evdi->dmabuf_by_id, (int)handle);
+	spin_unlock(&evdi->inflight_lock);
+#endif
+	if (entry) {
+		dmabuf = (struct dma_buf *)entry;
+		get_dma_buf(dmabuf);
+		*prime_fd = dma_buf_fd(dmabuf, flags & DRM_CLOEXEC);
+		if (*prime_fd < 0) {
+			dma_buf_put(dmabuf);
+			return *prime_fd;
+		}
+		return 0;
+	}
+
 	return evdi_export_id_as_fd((int)handle, flags, prime_fd);
 }
 
@@ -537,6 +559,7 @@ void evdi_gem_free_object(struct drm_gem_object *gem_obj)
 
 	if (obj->vmapping)
 		evdi_gem_vunmap(obj);
+
 
 	if (gem_obj->import_attach) {
 		dma_buf_detach(gem_obj->import_attach->dmabuf,

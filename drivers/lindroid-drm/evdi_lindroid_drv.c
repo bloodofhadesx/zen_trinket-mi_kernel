@@ -204,11 +204,13 @@ int evdi_device_init(struct evdi_device *evdi, struct platform_device *pdev)
 #ifdef EVDI_HAVE_XARRAY
 	xa_init_flags(&evdi->file_xa, XA_FLAGS_ALLOC);
 	xa_init_flags(&evdi->inflight_xa, XA_FLAGS_ALLOC);
+	xa_init_flags(&evdi->dmabuf_by_id, XA_FLAGS_ALLOC);
 	evdi->inflight_next_id = 1;
 #else
 	idr_init(&evdi->file_idr);
 	spin_lock_init(&evdi->file_lock);
 	idr_init(&evdi->inflight_idr);
+	idr_init(&evdi->dmabuf_by_id);
 	spin_lock_init(&evdi->inflight_lock);
 #endif
 
@@ -230,9 +232,11 @@ err_cleanup_locks:
 #ifdef EVDI_HAVE_XARRAY
 	xa_destroy(&evdi->file_xa);
 	xa_destroy(&evdi->inflight_xa);
+	xa_destroy(&evdi->dmabuf_by_id);
 #else
 	idr_destroy(&evdi->file_idr);
 	idr_destroy(&evdi->inflight_idr);
+	idr_destroy(&evdi->dmabuf_by_id);
 #endif
 	mutex_destroy(&evdi->config_mutex);
 	return ret;
@@ -281,9 +285,27 @@ void evdi_device_cleanup(struct evdi_device *evdi)
 	evdi_event_cleanup(evdi);
 	evdi_smp_mb();
 #ifdef EVDI_HAVE_XARRAY
+	{
+		struct dma_buf *old;
+		unsigned long idx;
+		xa_for_each(&evdi->dmabuf_by_id, idx, old) {
+			xa_erase(&evdi->dmabuf_by_id, idx);
+			dma_buf_put(old);
+		}
+	}
 	xa_destroy(&evdi->file_xa);
 	xa_destroy(&evdi->inflight_xa);
 #else
+	{
+		struct dma_buf *old;
+		int id;
+		spin_lock(&evdi->inflight_lock);
+		idr_for_each_entry(&evdi->dmabuf_by_id, old, id) {
+			idr_remove(&evdi->dmabuf_by_id, id);
+			dma_buf_put(old);
+		}
+		spin_unlock(&evdi->inflight_lock);
+	}
 	idr_destroy(&evdi->file_idr);
 	idr_destroy(&evdi->inflight_idr);
 #endif

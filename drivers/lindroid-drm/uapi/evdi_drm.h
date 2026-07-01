@@ -61,6 +61,7 @@ struct drm_evdi_create_buff_callabck {
 	int poll_id;
 	int id;
 	uint32_t stride;
+	int dma_buf_fd;
 };
 
 struct drm_evdi_gbm_create_buff {
